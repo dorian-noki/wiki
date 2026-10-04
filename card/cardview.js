@@ -10,6 +10,30 @@ let deck = {
     ex: {}
 };
 
+function getCardImageData(card) {
+    const fileName = String(card.cardName || '')
+        .replace(/[\/\\:*?"<>|]/g, '')
+        .trim();
+    const fallbackByType = {
+        monster: 'img/monster.png',
+        ex: 'img/ex.png',
+        magic: 'img/magic.png',
+        supporter: 'img/supporter.png'
+    };
+    return {
+        src: `cardimg/${encodeURIComponent(fileName)}.png`,
+        fallback: fallbackByType[card.cardBase] || 'img/monster.png'
+    };
+}
+
+function renderCardImage(card, className = 'card-art', frameClass = 'card-art-frame') {
+    const image = getCardImageData(card);
+    const alt = String(card.cardName || 'カード').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[character]);
+    return `<div class="${frameClass}"><img class="${className}" src="${image.src}" data-fallback="${image.fallback}" alt="${alt}" onerror="this.onerror=null;this.src=this.dataset.fallback;"></div>`;
+}
+
 const fileInput = document.getElementById('fileInput');
 const uploadArea = document.querySelector('.upload-area');
 
@@ -210,7 +234,16 @@ function updateDeckCount() {
 
 // Cookie保存
 function saveDeckToCookie() {
-    document.cookie = `deck=${JSON.stringify(deck)}; max-age=31536000; path=/`;
+    document.cookie = `deck=${encodeURIComponent(JSON.stringify(deck))}; max-age=31536000; path=/; SameSite=Lax`;
+    const toBattleDeck = deckType => Object.entries(deck[deckType]).map(([index, count]) => ({
+        cardName: allCards[Number(index)]?.cardName,
+        count
+    })).filter(item => item.cardName && item.count > 0);
+    localStorage.setItem('battleDeck', JSON.stringify({
+        deckName: 'cardview-deck',
+        main: toBattleDeck('main'),
+        ex: toBattleDeck('ex')
+    }));
 }
 
 // Cookie読み込み
@@ -221,6 +254,7 @@ function loadDeckFromCookie() {
         if (name === 'deck') {
             try {
                 deck = JSON.parse(decodeURIComponent(value));
+                saveDeckToCookie();
                 updateDeckCount();
                 if (deckMode) {
                     renderDeck();
@@ -229,6 +263,24 @@ function loadDeckFromCookie() {
                 console.error('デッキ読み込みエラー:', e);
             }
             break;
+        }
+    }
+
+    if (!cookies.some(cookie => cookie.trim().startsWith('deck='))) {
+        try {
+            const savedDeck = JSON.parse(localStorage.getItem('battleDeck') || 'null');
+            if (savedDeck && (Array.isArray(savedDeck.main) || Array.isArray(savedDeck.ex))) {
+                deck = { main: {}, ex: {} };
+                ['main', 'ex'].forEach(deckType => (savedDeck[deckType] || []).forEach(item => {
+                    const cardIndex = allCards.findIndex(card => card.cardName === item.cardName);
+                    if (cardIndex !== -1) deck[deckType][cardIndex] = Math.min(3, Number(item.count || 0));
+                }));
+                updateDeckCount();
+                saveDeckToCookie();
+                if (deckMode) renderDeck();
+            }
+        } catch (error) {
+            console.error('対戦デッキ読み込みエラー:', error);
         }
     }
 }
@@ -325,7 +377,7 @@ document.getElementById('clearDeckBtn').addEventListener('click', () => {
     }
 });
 
-document.querySelectorAll('.filter-btn').forEach(btn => {
+document.querySelectorAll('.filter-btn:not(#deckModeToggle)').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -478,7 +530,7 @@ function renderCards() {
         html += `</div>`;
 
         if (viewMode === 'detail') {
-            html += `<div class="card-body">`;
+            html += `<div class="card-body">${renderCardImage(card)}`;
 
             if (card.cardBase === 'monster' || card.cardBase === 'ex') {
                 html += `<div class="card-info-row">`;
@@ -557,7 +609,7 @@ function showModal(index) {
     document.getElementById('modalRuby').style.display = card.cardRuby ? 'block' : 'none';
     
     const modalBody = document.getElementById('modalBody');
-    let bodyHTML = '';
+    let bodyHTML = renderCardImage(card, 'card-art modal-card-image', 'card-art-frame modal-card-art');
 
     const typeName = {
         monster: 'モンスター',

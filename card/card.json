@@ -441,7 +441,7 @@
       {
         "type": "P",
         "name": "今日もオレが一番かわいい",
-        "text": "自分のターンに常時発動する。自分が魔法カードを発動するたび、山札を1枚めくる。それが魔法カードだった場合、自分のマナを1し、そのカードを山札の一番下に置く。そうでなかった場合、墓地に送る。"
+        "text": "自分のターンに常時発動する。自分が魔法カードを発動するたび、山札を1枚めくる。それが魔法カードだった場合、自分のマナを+1し、そのカードを山札の一番下に置く。そうでなかった場合、墓地に送る。"
       }
     ],
     "contentText": ""
@@ -622,7 +622,7 @@
     "hp": 0,
     "supplementText": "",
     "skills": [],
-    "contentText": "このターンに魔法を発動するために支払ったコストの数だけ、場のカード名に「バニラ」を含むタイプ:魔術師モンスターの攻撃力は、次の相手ターン終了まで10する。攻撃力とHPが魔法カードの効果で逆転した/している時、HPに同じ処理を行う。"
+    "contentText": "このターンに魔法を発動するために支払ったコスト数×+10だけ、場のカード名に「バニラ」を含むタイプ:魔術師モンスターの攻撃力を次の相手ターン終了まで増加する。攻撃力とHPが魔法カードの効果で逆転した/している時、HPも同じ値だけ増加する。"
   },
   {
     "cardBase": "magic",
@@ -906,7 +906,7 @@
       {
         "type": "A",
         "name": "なきごえ D50 C2",
-        "text": "次のターン、相手モンスターの攻撃力は10する。"
+        "text": "次のターン、相手モンスターの攻撃力を-10する。"
       }
     ],
     "contentText": ""
@@ -979,7 +979,7 @@
       {
         "type": "P",
         "name": "",
-        "text": "自分の場のモンスターを1体選び、このターン中攻撃力を20する。"
+        "text": "自分の場のモンスターを1体選び、このターン中攻撃力を+20する。"
       }
     ],
     "contentText": ""
@@ -1229,6 +1229,81 @@
         "text": ""
       }
     ],
+    "contentText": ""
+  },
+  {
+    "cardBase": "monster",
+    "attribute": "",
+    "cardName": "ギガントブレード",
+    "cardRuby": "",
+    "monsterType": "通常",
+    "tribe": "？？？族",
+    "monsterTypeText": "機械",
+    "evolutionSource": "",
+    "attack": 10,
+    "hp": 100,
+    "supplementText": "テスト用仮データです。正式な能力値は後日更新してください。",
+    "skills": [],
+    "contentText": ""
+  },
+  {
+    "cardBase": "monster",
+    "attribute": "",
+    "cardName": "ギガントクラッシャー",
+    "cardRuby": "",
+    "monsterType": "通常",
+    "tribe": "？？？族",
+    "monsterTypeText": "機械",
+    "evolutionSource": "",
+    "attack": 10,
+    "hp": 100,
+    "supplementText": "テスト用仮データです。正式な能力値は後日更新してください。",
+    "skills": [],
+    "contentText": ""
+  },
+  {
+    "cardBase": "monster",
+    "attribute": "",
+    "cardName": "ギガントブレット",
+    "cardRuby": "",
+    "monsterType": "通常",
+    "tribe": "？？？族",
+    "monsterTypeText": "機械",
+    "evolutionSource": "",
+    "attack": 10,
+    "hp": 100,
+    "supplementText": "テスト用仮データです。正式な能力値は後日更新してください。",
+    "skills": [],
+    "contentText": ""
+  },
+  {
+    "cardBase": "monster",
+    "attribute": "",
+    "cardName": "ギガントジェット",
+    "cardRuby": "",
+    "monsterType": "通常",
+    "tribe": "？？？族",
+    "monsterTypeText": "機械",
+    "evolutionSource": "",
+    "attack": 10,
+    "hp": 100,
+    "supplementText": "テスト用仮データです。正式な能力値は後日更新してください。",
+    "skills": [],
+    "contentText": ""
+  },
+  {
+    "cardBase": "monster",
+    "attribute": "",
+    "cardName": "ギガントコア",
+    "cardRuby": "",
+    "monsterType": "通常",
+    "tribe": "？？？族",
+    "monsterTypeText": "機械",
+    "evolutionSource": "",
+    "attack": 10,
+    "hp": 100,
+    "supplementText": "テスト用仮データです。正式な能力値は後日更新してください。",
+    "skills": [],
     "contentText": ""
   },
   {
@@ -2130,7 +2205,7 @@
       {
         "type": "P",
         "name": "劫火一刀",
-        "text": "次の自分ドローフェイズまで、HPと攻撃力を自分の場の他のタイプ:桜花絢爛モンスターの数×20上げる。"
+        "text": "次の自分ドローフェイズまで、自分の場の他のタイプ:桜花絢爛モンスター1体につきHPと攻撃力を+20ずつ上げる。"
       }
     ],
     "contentText": ""

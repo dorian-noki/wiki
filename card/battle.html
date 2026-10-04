@@ -105,6 +105,7 @@
             <button class="menu-btn" id="turnEndBtn">ターンエンド</button>
             <button class="menu-btn" id="mulliganEndBtn">手札決定</button>
             <button class="menu-btn" id="manaRecoverBtn">マナ回復</button>
+            <button class="menu-btn" id="drawToFreeBtn">フリーゾーンへドロー</button>
             <button class="menu-btn" id="loadDeckBtn">デッキ読み込み</button>
             <button class="menu-btn">やめる</button>
         </div>
@@ -158,10 +159,14 @@
                 <div class="status-item">
                     <span class="status-label">2P HP:</span>
                     <span class="status-value">5</span>
+                    <button class="hp-decrease-btn" id="decreaseOpponentHpBtn" type="button" aria-label="2PのHPを1減らす" title="HPを1減らす">−</button>
+                    <button class="hp-increase-btn" id="increaseOpponentHpBtn" type="button" aria-label="2PのHPを1増やす" title="HPを1増やす">＋</button>
                 </div>
                 <div class="status-item">
                     <span class="status-label">シールド:</span>
                     <span class="status-value">3</span>
+                    <button class="shield-change-btn" id="decreaseOpponentShieldBtn" type="button" aria-label="2Pのシールドを1減らす" title="シールドを1減らす">−</button>
+                    <button class="shield-change-btn" id="increaseOpponentShieldBtn" type="button" aria-label="2Pのシールドを1増やす" title="シールドを1増やす">＋</button>
                 </div>
                 <div class="status-item">
                     <span class="status-label">マナ:</span>
@@ -172,10 +177,14 @@
                 <div class="status-item">
                     <span class="status-label">1P HP:</span>
                     <span class="status-value">5</span>
+                    <button class="hp-decrease-btn" id="decreasePlayerHpBtn" type="button" aria-label="1PのHPを1減らす" title="HPを1減らす">−</button>
+                    <button class="hp-increase-btn" id="increasePlayerHpBtn" type="button" aria-label="1PのHPを1増やす" title="HPを1増やす">＋</button>
                 </div>
                 <div class="status-item">
                     <span class="status-label">シールド:</span>
                     <span class="status-value">3</span>
+                    <button class="shield-change-btn" id="decreasePlayerShieldBtn" type="button" aria-label="1Pのシールドを1減らす" title="シールドを1減らす">−</button>
+                    <button class="shield-change-btn" id="increasePlayerShieldBtn" type="button" aria-label="1Pのシールドを1増やす" title="シールドを1増やす">＋</button>
                 </div>
                 <div class="status-item">
                     <span class="status-label">マナ:</span>
@@ -189,11 +198,30 @@
                 </div>
             </div>
             <div class="online-control">
-                <input type="text" id="onlineRoomInput" class="online-input" placeholder="room" value="default">
+                <input type="text" id="onlineRoomInput" class="online-input" placeholder="共有する部屋ID" value="">
                 <input type="text" id="onlinePlayerInput" class="online-input" placeholder="player 1 or 2" value="1">
                 <button class="online-btn" id="onlineConnectBtn">オンライン接続</button>
                 <span class="online-status" id="onlineStatus">未接続</span>
                 <span class="online-players" id="onlinePlayers">プレイヤー: -</span>
+            </div>
+            <div class="game-start-control">
+                <button class="online-btn" id="startGameBtn" disabled>デッキを読み込んでください</button>
+                <span id="gameStartStatus">デッキ読み込み後、初手を確認してゲーム開始</span>
+            </div>
+            <div class="play-mode-control">
+                <label for="playModeSelect">ゲームモード</label>
+                <select id="playModeSelect">
+                    <option value="manual">マニュアル</option>
+                    <option value="semi-auto">セミオート</option>
+                </select>
+            </div>
+            <div class="play-mode-control operation-mode-control">
+                <label for="operationModeSelect">操作モード</label>
+                <select id="operationModeSelect">
+                    <option value="private">非公開</option>
+                    <option value="public">公開</option>
+                    <option value="auto">自動</option>
+                </select>
             </div>
         </div>
 
@@ -206,6 +234,7 @@
             </div>
             <div class="chat-input-area">
                 <input type="text" class="chat-input" id="chatInput" placeholder="チャットを入力...">
+                <button class="chat-send-btn" id="chatSendBtn" type="button" title="送信" aria-label="チャットを送信">➤</button>
             </div>
         </div>
 
@@ -220,7 +249,7 @@
             </div>
             <div class="counter-control">
                 <div class="counter-display">
-                    <input type="number" id="counterValue" value="0">
+                    <input type="number" id="counterValue" value="0" aria-label="正数でダメージ、負数で回復">
                 </div>
                 <div class="counter-buttons">
                     <button class="counter-btn" id="counterMinus">-10</button>

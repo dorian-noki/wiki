@@ -70,7 +70,33 @@
             margin: 0 auto;
             width: 100%;
         }
-        .main-container.deck-mode .cards-area {
+        .card-art-frame {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.12);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        .card-art {
+            display: block;
+            width: auto;
+            max-width: 100%;
+            height: 220px;
+            object-fit: contain;
+        }
+        .modal-card-art {
+            display: flex;
+            justify-content: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .modal-card-art .card-art {
+            height: auto;
+            max-height: 420px;
+        }
+        .main-container.deck-mode .main-content {
             max-width: 600px;
         }
         
@@ -85,6 +111,7 @@
         }
         .main-container.deck-mode .deck-area {
             width: 400px;
+            flex: 0 0 400px;
         }
         .deck-header {
             padding: 1.5rem;
@@ -732,7 +759,7 @@
     </style>
 </head>
 <body>
-    <div class="container" id="mainContainer">
+    <div class="container main-container" id="mainContainer">
         <aside class="sidebar">
             <a href="cardview.html" class="sidebar-item active" title="カード一覧">🎴</a>
             <a href="deckSelect.html" class="sidebar-item" title="対戦">⚔️</a>
@@ -826,8 +853,7 @@
 
                     <div class="card-list" id="cardContainer"></div>
                 </div>
-            </div>
-        </div>
+        </main>
 
         <div class="deck-area" id="deckArea">
             <div class="deck-header">
@@ -866,6 +892,6 @@
         </div>
     </div>
 
-    <script src="cardview.js"></script>
+    <script src="cardview.js?v=20261004"></script>
 </body>
 </html>

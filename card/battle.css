@@ -193,6 +193,67 @@ body {
     height: auto; /* 固定heightを削除してflexに任せる */
 }
 
+.opponent-public-free {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: max-content;
+    padding-left: 0.5rem;
+    border-left: 1px solid var(--border-color);
+}
+
+.public-free-label {
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    white-space: nowrap;
+}
+
+.public-free-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 76px;
+    flex: 0 0 54px;
+    overflow: hidden;
+    padding: 2px;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+.public-free-card img {
+    width: 100%;
+    height: 50px;
+    object-fit: contain;
+}
+
+.public-free-card span {
+    width: 100%;
+    overflow: hidden;
+    font-size: 0.62rem;
+    line-height: 1.1;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.public-free-card:hover {
+    border-color: var(--accent-color);
+}
+
+.concealed-opponent-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.16);
+    color: var(--text-secondary);
+    font-size: 0.65rem;
+}
+
 .zone-toggle-btn {
     min-width: 80px;
     height: 100%;
@@ -505,6 +566,38 @@ body {
     margin-top: 0.75rem;
 }
 
+.game-start-control {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.game-start-control .online-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.play-mode-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.65rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.play-mode-control select {
+    padding: 0.3rem 0.45rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--callout-bg);
+    color: var(--text-color);
+    font: inherit;
+}
+
 .online-btn {
     padding: 0.55rem 0.9rem;
     background: var(--accent-color);
@@ -526,7 +619,8 @@ body {
 
 .status-row {
     display: flex;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.6rem;
     margin-bottom: 0.4rem;
     font-size: 0.8rem;
 }
@@ -549,6 +643,29 @@ body {
 .status-item {
     display: flex;
     align-items: center;
+}
+
+.hp-decrease-btn {
+    width: 22px;
+    height: 22px;
+    margin-left: 0.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    background: rgba(239, 68, 68, 0.18);
+    color: #ef7777;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.hp-decrease-btn:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.35);
+}
+
+.hp-decrease-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 /* ログエリア */
@@ -602,9 +719,14 @@ body {
     padding: 0.75rem 1rem;
     background: rgba(139, 158, 125, 0.05);
     border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .chat-input {
+    min-width: 0;
+    flex: 1;
     width: 100%;
     padding: 0.5rem;
     background: rgba(0, 0, 0, 0.2);
@@ -932,4 +1054,66 @@ body {
 
 .placement-btn.cancel:hover {
     background: rgba(139, 158, 125, 0.3);
+}
+
+.chat-send-btn {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    border: 1px solid var(--accent-green);
+    border-radius: 4px;
+    background: var(--accent-color);
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.chat-send-btn:hover {
+    background: var(--accent-green);
+}
+
+.hp-increase-btn,
+.shield-change-btn {
+    width: 22px;
+    height: 22px;
+    margin-left: 0.2rem;
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    background: rgba(76, 175, 125, 0.16);
+    color: #72c99a;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.shield-change-btn:first-of-type {
+    background: rgba(239, 68, 68, 0.18);
+    color: #ef7777;
+}
+
+.hp-increase-btn:hover:not(:disabled),
+.shield-change-btn:hover:not(:disabled) {
+    filter: brightness(1.25);
+}
+
+.hp-increase-btn:disabled,
+.shield-change-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.semi-auto-mode .operation-mode-control,
+.semi-auto-mode .hp-decrease-btn,
+.semi-auto-mode .hp-increase-btn,
+.semi-auto-mode .shield-change-btn,
+.semi-auto-mode .counter-control,
+.semi-auto-mode #coinTossBtn,
+.semi-auto-mode #manaRecoverBtn,
+.semi-auto-mode #drawToFreeBtn {
+    display: none !important;
+}
+
+.semi-auto-mode #loadDeckBtn {
+    display: flex !important;
 }
