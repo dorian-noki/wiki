@@ -585,6 +585,11 @@ body {
     display: none;
 }
 
+.solo-mode .room-info-toggle-row,
+.solo-mode .online-control {
+    display: none !important;
+}
+
 .online-control {
     display: flex;
     flex-wrap: wrap;

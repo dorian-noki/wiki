@@ -109,6 +109,22 @@
         .deck-info.active {
             display: block;
         }
+        .mode-selection {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem 1.25rem;
+            margin: 1.25rem 0;
+        }
+        .mode-option {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            color: var(--text-color);
+            cursor: pointer;
+        }
+        .mode-option input {
+            accent-color: var(--accent-color);
+        }
         .start-btn {
             width: 100%;
             padding: 1rem;
@@ -183,6 +199,12 @@
                     </div>
                 </div>
 
+                <fieldset class="mode-selection">
+                    <legend>プレイモード</legend>
+                    <label class="mode-option"><input type="radio" name="playMode" value="battle" checked>対戦</label>
+                    <label class="mode-option"><input type="radio" name="playMode" value="solo">ソロ（1人回し）</label>
+                </fieldset>
+
                 <button class="start-btn" id="startBtn" disabled>対戦開始</button>
             </section>
         </main>
@@ -215,6 +237,12 @@
             reader.readAsText(file);
         });
 
+        document.querySelectorAll('input[name="playMode"]').forEach(input => {
+            input.addEventListener('change', () => {
+                document.getElementById('startBtn').textContent = input.value === 'solo' ? 'ソロ開始' : '対戦開始';
+            });
+        });
+
         document.getElementById('startBtn').addEventListener('click', () => {
             if (!deckData) return;
             
@@ -222,7 +250,8 @@
             localStorage.setItem('battleDeck', JSON.stringify(deckData));
             
             // バトル画面に遷移
-            window.location.href = 'battle.html';
+            const soloMode = document.querySelector('input[name="playMode"]:checked')?.value === 'solo';
+            window.location.href = soloMode ? 'battle.html?mode=solo' : 'battle.html';
         });
     </script>
 </body>

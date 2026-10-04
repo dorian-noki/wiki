@@ -13,6 +13,7 @@ const firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const database = getDatabase(firebaseApp);
+const soloModeRequested = new URLSearchParams(window.location.search).get('mode') === 'solo';
 
 // ===== ゲーム状態管理(オンライン同期用の基盤) =====
 const gameState = {
@@ -37,7 +38,8 @@ const gameState = {
     selectedFieldMonster: null,
     winner: null,
     playMode: 'manual',
-    operationMode: 'private'
+    operationMode: 'private',
+    soloMode: soloModeRequested
 };
 
 // 日本語変換マップ
@@ -361,7 +363,7 @@ function updateGameStartButton() {
     const needsInitialDraw = player.hand.length === 0 && player.deck.length > 0;
     button.disabled = !hasCards || !gameState.mulliganPhase || player.mulliganReady;
     button.textContent = !gameState.mulliganPhase
-        ? 'ゲーム進行中'
+        ? gameState.soloMode ? 'ソロプレイ中' : 'ゲーム進行中'
         : player.mulliganReady
             ? '相手の準備待ち'
             : needsInitialDraw
@@ -370,7 +372,7 @@ function updateGameStartButton() {
     status.textContent = !hasCards
         ? 'デッキを読み込んでください'
         : !gameState.mulliganPhase
-            ? `ターン${gameState.turn}・${isCurrentPlayerTurn() ? 'あなたのターン' : '相手のターン'}`
+            ? gameState.soloMode ? `ソロ・ターン${gameState.turn}` : `ターン${gameState.turn}・${isCurrentPlayerTurn() ? 'あなたのターン' : '相手のターン'}`
         : player.mulliganReady
             ? '相手が初手を確定すると対戦が始まります'
         : gameState.mulliganPhase && needsInitialDraw
@@ -1445,6 +1447,7 @@ function displayCardDetail(card, source) {
 // UIを更新
 function renderUI() {
     const playerTurn = isCurrentPlayerTurn();
+    document.body.classList.toggle('solo-mode', gameState.soloMode);
     document.body.classList.toggle('semi-auto-mode', isSemiAutoMode());
     document.getElementById('playModeSelect').value = gameState.playMode;
     document.getElementById('operationModeSelect').value = gameState.operationMode;
@@ -1453,7 +1456,7 @@ function renderUI() {
     const statusLabels = document.querySelectorAll('.status-label');
     const opponentId = gameState.players[0].id;
     const playerId = gameState.players[1].id;
-    statusLabels[0].textContent = `${opponentId} HP:`;
+    statusLabels[0].textContent = gameState.soloMode ? '練習用 HP:' : `${opponentId} HP:`;
     statusLabels[3].textContent = `${playerId} HP:`;
     document.getElementById('decreaseOpponentHpBtn').setAttribute('aria-label', `${opponentId}のHPを1減らす`);
     document.getElementById('decreasePlayerHpBtn').setAttribute('aria-label', `${playerId}のHPを1減らす`);
@@ -2916,7 +2919,23 @@ function executeAction(action) {
             break;
 
         case 'TURN_END':
-            if (isMyTurn) {
+            if (isMyTurn && gameState.soloMode) {
+                const isOpeningTurn = gameState.isFirstPlayerFirstTurn;
+                expireTemporaryModifiers(1);
+                expireTemporaryModifiers(0);
+                gameState.turn++;
+                gameState.currentPlayer = 1;
+                gameState.usedSupporterThisTurn = false;
+                resetAttacksForPlayer(1);
+                if (isOpeningTurn) {
+                    gameState.isFirstPlayerFirstTurn = false;
+                } else {
+                    gameState.players[1].maxMana = Math.min(10, gameState.players[1].maxMana + 1);
+                    gameState.players[1].mana = gameState.players[1].maxMana;
+                    executeAction({ type: 'DRAW' });
+                }
+                gameState.logs.push({ type: 'system', message: `ソロモード: ターン${gameState.turn}を開始しました`, time: Date.now() });
+            } else if (isMyTurn) {
                 expireTemporaryModifiers(1);
                 gameState.currentPlayer = 0;
                 gameState.usedSupporterThisTurn = false;
