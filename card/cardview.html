@@ -97,7 +97,21 @@
             max-height: 420px;
         }
         .main-container.deck-mode .main-content {
-            max-width: 600px;
+            flex: 1 1 0;
+            width: auto;
+            max-width: none;
+            min-height: 0;
+            height: 100%;
+            margin: 0;
+            overflow-y: auto;
+        }
+        .main-container.deck-mode {
+            height: calc(100vh - 4em);
+            margin: 2em auto;
+            padding-right: 0;
+            gap: 1.25rem;
+            overflow: hidden;
+            align-items: stretch;
         }
         
         .deck-area {
@@ -112,10 +126,13 @@
         .main-container.deck-mode .deck-area {
             width: 400px;
             flex: 0 0 400px;
+            height: 100%;
+            min-height: 0;
         }
         .deck-header {
             padding: 1.5rem;
             border-bottom: 1px solid var(--callout-border);
+            flex: 0 0 auto;
         }
         .deck-header h2 {
             margin: 0 0 0.5rem 0;
@@ -159,6 +176,7 @@
             flex: 1;
             overflow-y: auto;
             padding: 1rem;
+            min-height: 0;
         }
         .deck-card-item {
             background: rgba(139, 158, 125, 0.1);
@@ -234,6 +252,7 @@
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
+            flex: 0 0 auto;
         }
         .deck-action-btn {
             width: 100%;
