@@ -2248,6 +2248,22 @@ document.getElementById('counterPlus').addEventListener('click', () => {
     input.value = parseInt(input.value || 0) + 10;
 });
 
+document.getElementById('roomInfoToggleBtn').addEventListener('click', event => {
+    const button = event.currentTarget;
+    const panel = document.getElementById('roomInfoPanel');
+    const collapsed = panel.classList.toggle('collapsed');
+    button.setAttribute('aria-expanded', String(!collapsed));
+    button.textContent = collapsed ? '部屋情報を表示' : '部屋情報を隠す';
+});
+
+document.getElementById('counterToggleBtn').addEventListener('click', event => {
+    const button = event.currentTarget;
+    const panel = document.getElementById('counterControl');
+    const collapsed = panel.classList.toggle('collapsed');
+    button.setAttribute('aria-expanded', String(!collapsed));
+    button.textContent = collapsed ? 'ダメージ操作を表示' : 'ダメージ操作を隠す';
+});
+
 document.getElementById('counterApplyBtn').addEventListener('click', () => {
     const value = parseInt(document.getElementById('counterValue').value || 0);
     if (gameState.selectedFieldCell !== null) {

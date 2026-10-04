@@ -197,16 +197,21 @@
                     <span class="status-value" id="turnStatus">1 - あなたのターン</span>
                 </div>
             </div>
-            <div class="online-control">
-                <input type="text" id="onlineRoomInput" class="online-input" placeholder="共有する部屋ID" value="">
-                <input type="text" id="onlinePlayerInput" class="online-input" placeholder="player 1 or 2" value="1">
-                <button class="online-btn" id="onlineConnectBtn">オンライン接続</button>
-                <span class="online-status" id="onlineStatus">未接続</span>
-                <span class="online-players" id="onlinePlayers">プレイヤー: -</span>
+            <div class="panel-toggle-row">
+                <button class="panel-toggle-btn" id="roomInfoToggleBtn" type="button" aria-controls="roomInfoPanel" aria-expanded="true">部屋情報を隠す</button>
             </div>
-            <div class="game-start-control">
-                <button class="online-btn" id="startGameBtn" disabled>デッキを読み込んでください</button>
-                <span id="gameStartStatus">デッキ読み込み後、初手を確認してゲーム開始</span>
+            <div class="room-info-content" id="roomInfoPanel">
+                <div class="online-control">
+                    <input type="text" id="onlineRoomInput" class="online-input" placeholder="共有する部屋ID" value="">
+                    <input type="text" id="onlinePlayerInput" class="online-input" placeholder="player 1 or 2" value="1">
+                    <button class="online-btn" id="onlineConnectBtn">オンライン接続</button>
+                    <span class="online-status" id="onlineStatus">未接続</span>
+                    <span class="online-players" id="onlinePlayers">プレイヤー: -</span>
+                </div>
+                <div class="game-start-control">
+                    <button class="online-btn" id="startGameBtn" disabled>デッキを読み込んでください</button>
+                    <span id="gameStartStatus">デッキ読み込み後、初手を確認してゲーム開始</span>
+                </div>
             </div>
             <div class="play-mode-control">
                 <label for="playModeSelect">ゲームモード</label>
@@ -247,15 +252,18 @@
                 <div class="field-cell mini" data-pos="4"></div>
                 <div class="field-cell mini" data-pos="5"></div>
             </div>
-            <div class="counter-control">
-                <div class="counter-display">
-                    <input type="number" id="counterValue" value="0" aria-label="正数でダメージ、負数で回復">
+            <div class="counter-panel">
+                <button class="panel-toggle-btn" id="counterToggleBtn" type="button" aria-controls="counterControl" aria-expanded="true">ダメージ操作を隠す</button>
+                <div class="counter-control" id="counterControl">
+                    <div class="counter-display">
+                        <input type="number" id="counterValue" value="0" aria-label="正数でダメージ、負数で回復">
+                    </div>
+                    <div class="counter-buttons">
+                        <button class="counter-btn" id="counterMinus">-10</button>
+                        <button class="counter-btn" id="counterPlus">+10</button>
+                    </div>
+                    <button class="counter-apply-btn" id="counterApplyBtn" disabled>決定</button>
                 </div>
-                <div class="counter-buttons">
-                    <button class="counter-btn" id="counterMinus">-10</button>
-                    <button class="counter-btn" id="counterPlus">+10</button>
-                </div>
-                <button class="counter-apply-btn" id="counterApplyBtn" disabled>決定</button>
             </div>
         </div>
     </div>
