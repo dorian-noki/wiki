@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カードパック - 時のアマリス</title>
+    <link rel="stylesheet" href="../css/default.css">
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; }
+        .container { display: flex; max-width: 1280px; margin: 1.5rem auto 4rem; gap: 1.25rem; padding: 0 1.25rem; }
+        .sidebar { width: 72px; flex: 0 0 72px; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding-top: 0.5rem; }
+        .sidebar-item { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 8px; color: var(--text-color); background: rgba(255,255,255,.05); text-decoration: none; font-size: 1.35rem; }
+        .sidebar-item.active { background: var(--accent-color); color: white; }
+        main { flex: 1; min-width: 0; }
+        .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+        h1 { margin: 0; font-size: 1.8rem; }
+        .wallet { color: var(--text-secondary); }
+        .wallet strong { color: var(--text-color); }
+        .pack-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: .75rem; }
+        .pack-item { border: 1px solid var(--callout-border); border-radius: 6px; background: var(--callout-bg); padding: 1rem; }
+        .pack-item h2 { margin: 0 0 .5rem; font-size: 1.1rem; }
+        .pack-item p { min-height: 3em; margin: 0 0 .75rem; color: var(--text-secondary); font-size: .85rem; line-height: 1.5; }
+        .pack-price { margin-bottom: .75rem; color: var(--text-secondary); font-size: .85rem; }
+        button { font: inherit; }
+        .buy-btn { width: 100%; padding: .6rem .75rem; border: 1px solid var(--accent-green); border-radius: 4px; background: var(--accent-color); color: white; cursor: pointer; }
+        .buy-btn:disabled { opacity: .45; cursor: not-allowed; }
+        .pity { margin: 1rem 0; padding: .75rem 1rem; border-left: 3px solid var(--accent-color); background: rgba(255,255,255,.05); color: var(--text-secondary); }
+        .result { margin-top: 1.5rem; }
+        .result h2 { margin: 0 0 .75rem; font-size: 1.2rem; }
+        .result-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(145px,1fr)); gap: .5rem; }
+        .result-card { display: flex; align-items: center; gap: .5rem; min-width: 0; padding: .5rem; border: 1px solid var(--border-color); border-radius: 4px; background: rgba(255,255,255,.04); }
+        .result-card img { width: 42px; height: 58px; object-fit: contain; flex: 0 0 42px; }
+        .result-info { min-width: 0; }
+        .result-name { font-size: .78rem; line-height: 1.35; overflow-wrap: anywhere; }
+        .result-rarity { margin-top: .2rem; color: var(--accent-color); font-size: .72rem; font-weight: 700; }
+        .pack-links { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 1rem; }
+        .pack-links a { color: var(--link-color); }
+        @media (max-width: 650px) { .container { padding: 0 .6rem; gap: .5rem; } .sidebar { width: 42px; flex-basis: 42px; } .sidebar-item { width: 38px; height: 38px; } .page-head { align-items: flex-start; flex-direction: column; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <a href="cardview.html" class="sidebar-item" title="カード一覧">🎴</a>
+            <a href="deckSelect.html" class="sidebar-item" title="対戦">⚔️</a>
+            <a href="gacha.html" class="sidebar-item active" title="カードパック">📦</a>
+            <a href="currency.html" class="sidebar-item" title="通貨">🪙</a>
+        </aside>
+        <main>
+            <div class="page-head">
+                <h1>カードパック</h1>
+                <div class="wallet">所持通貨: <strong id="currencyValue">0</strong></div>
+            </div>
+            <div class="pity" id="pityStatus">UR確定まであと5パック</div>
+            <section class="pack-grid" id="packGrid" aria-label="パック一覧"></section>
+            <section class="result" id="packResult" hidden>
+                <h2 id="resultTitle">パック結果</h2>
+                <div class="result-list" id="resultCards"></div>
+            </section>
+            <nav class="pack-links">
+                <a href="currency.html">通貨を獲得</a>
+                <a href="cardview.html">カード一覧・所持状況</a>
+            </nav>
+        </main>
+    </div>
+    <script src="collection.js"></script>
+    <script src="gacha.js"></script>
+</body>
+</html>

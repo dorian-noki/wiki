@@ -784,6 +784,8 @@
         <aside class="sidebar">
             <a href="cardview.html" class="sidebar-item active" title="カード一覧">🎴</a>
             <a href="deckSelect.html" class="sidebar-item" title="対戦">⚔️</a>
+            <a href="gacha.html" class="sidebar-item" title="カードパック">📦</a>
+            <a href="currency.html" class="sidebar-item" title="通貨">🪙</a>
             <a href="rules.html" class="sidebar-item" title="ルール">📖</a>
             <a href="16.html" class="sidebar-item" title="印刷">🖨️</a>
             <a href="../index.html" class="sidebar-item" title="Wikiトップ">🏠</a>
@@ -829,6 +831,21 @@
                             </div>
                         </div>
                         <div class="controls-row">
+                            <div class="control-group">
+                                <label class="control-label" for="collectionModeSelect">使用モード:</label>
+                                <select id="collectionModeSelect">
+                                    <option value="unlimited">無制限</option>
+                                    <option value="trading">トレーディング</option>
+                                </select>
+                            </div>
+                            <div class="control-group">
+                                <label class="control-label" for="ownershipFilter">所持:</label>
+                                <select id="ownershipFilter">
+                                    <option value="all">すべて</option>
+                                    <option value="owned">所持</option>
+                                    <option value="unowned">非所持</option>
+                                </select>
+                            </div>
                             <button id="deckModeToggle" class="filter-btn">デッキ表示</button>
                             <div class="control-group">
                                 <label class="control-label">表示:</label>
@@ -882,6 +899,7 @@
                 <div class="deck-count" id="deckCount">
                     通常: <span id="mainDeckCount">0</span>/40-60枚 | EX: <span id="exDeckCount">0</span>/15枚
                 </div>
+                <div class="deck-count" id="deckOwnershipStatus" role="status"></div>
                 <div class="deck-tabs">
                     <button class="deck-tab active" data-deck="main">通常デッキ</button>
                     <button class="deck-tab" data-deck="ex">EXデッキ</button>
@@ -913,6 +931,7 @@
         </div>
     </div>
 
+    <script src="collection.js"></script>
     <script src="cardview.js?v=20261004"></script>
 </body>
 </html>

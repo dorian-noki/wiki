@@ -14,6 +14,7 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const database = getDatabase(firebaseApp);
 const soloModeRequested = new URLSearchParams(window.location.search).get('mode') === 'solo';
+let skillNameMode = localStorage.getItem('skillNameMode') === 'name' ? 'name' : 'number';
 
 // ===== ゲーム状態管理(オンライン同期用の基盤) =====
 const gameState = {
@@ -67,6 +68,7 @@ const translations = {
 };
 
 let cardDatabase = [];
+let loadedDeckData = null;
 
 async function initializeCardDatabase() {
     try {
@@ -105,9 +107,16 @@ function getCardEffectText(card) {
     const effects = [];
     if (card.contentText?.trim()) effects.push(card.contentText.trim());
     (card.skills || []).forEach(skill => {
-        if (skill.text?.trim()) effects.push(`${skill.type === 'A' ? 'Aスキル' : 'Pスキル'}「${skill.name}」: ${skill.text.trim()}`);
+        if (skill.text?.trim()) effects.push(`${getSkillDisplayName(card, skill)}: ${skill.text.trim()}`);
     });
     return effects.join(' / ') || '効果テキストなし';
+}
+
+function getSkillDisplayName(card, skill) {
+    if (skillNameMode === 'name' && skill.name?.trim()) return skill.name;
+    const skillsOfType = (card?.skills || []).filter(item => item.type === skill.type);
+    const number = skillsOfType.indexOf(skill) + 1;
+    return `${skill.type === 'A' ? 'A' : 'P'}スキル ${number}`;
 }
 
 function redactCardNames(message) {
@@ -115,6 +124,14 @@ function redactCardNames(message) {
         .map(card => card.cardName)
         .sort((left, right) => right.length - left.length)
         .reduce((redacted, cardName) => redacted.replaceAll(cardName, 'カード'), String(message || ''));
+}
+
+function formatSkillNamesForDisplay(message) {
+    if (skillNameMode === 'name') return String(message || '');
+    return cardDatabase.reduce((formatted, card) => (card.skills || []).reduce((text, skill) => {
+        if (!skill.name?.trim()) return text;
+        return text.replaceAll(skill.name, getSkillDisplayName(card, skill));
+    }, formatted), String(message || ''));
 }
 
 // 独立した場出しパネルの制御
@@ -173,7 +190,7 @@ function isCurrentPlayerTurn() {
 }
 
 function isSemiAutoMode() {
-    return gameState.playMode === 'semi-auto' || gameState.operationMode === 'auto';
+    return gameState.playMode === 'semi-auto';
 }
 
 function isPlayerTwoView() {
@@ -258,7 +275,9 @@ function createSharedState() {
         mulliganSelected: [],
         logs: gameState.operationMode === 'public'
             ? state.logs
-            : state.logs.map(log => ({ ...log, message: redactCardNames(log.message) })),
+            : state.logs.map(log => gameState.operationMode === 'auto' && log.revealCardNames
+                ? log
+                : ({ ...log, message: redactCardNames(log.message) })),
         privateLogs: gameState.operationMode === 'public' ? state.privateLogs : []
     };
 }
@@ -361,15 +380,22 @@ function updateGameStartButton() {
     const player = gameState.players[1];
     const hasCards = player.deck.length > 0 || player.hand.length > 0;
     const needsInitialDraw = player.hand.length === 0 && player.deck.length > 0;
-    button.disabled = !hasCards || !gameState.mulliganPhase || player.mulliganReady;
-    button.textContent = !gameState.mulliganPhase
+    const ownershipIssues = AmarisCollection.getState().gameMode === 'trading' && loadedDeckData
+        ? AmarisCollection.getDeckOwnershipIssues(loadedDeckData)
+        : [];
+    button.disabled = !hasCards || !gameState.mulliganPhase || player.mulliganReady || ownershipIssues.length > 0;
+    button.textContent = ownershipIssues.length
+        ? '所持カードを確認してください'
+        : !gameState.mulliganPhase
         ? gameState.soloMode ? 'ソロプレイ中' : 'ゲーム進行中'
         : player.mulliganReady
             ? '相手の準備待ち'
             : needsInitialDraw
                 ? '初手を引く'
                 : '初手を確定';
-    status.textContent = !hasCards
+    status.textContent = ownershipIssues.length
+        ? `所持数超過: ${ownershipIssues.map(issue => `${issue.cardName} ${issue.count}/${issue.limit}`).join('、')}`
+        : !hasCards
         ? 'デッキを読み込んでください'
         : !gameState.mulliganPhase
             ? gameState.soloMode ? `ソロ・ターン${gameState.turn}` : `ターン${gameState.turn}・${isCurrentPlayerTurn() ? 'あなたのターン' : '相手のターン'}`
@@ -949,6 +975,7 @@ function destroyMonster(playerIndex, zone, index) {
     gameState.logs.push({
         type: 'system',
         message: `${monster.card.cardName}が破壊され、墓地へ送られました`,
+        revealCardNames: true,
         time: Date.now()
     });
 
@@ -974,6 +1001,7 @@ function dealDamageToMonster(playerIndex, zone, index, amount) {
         message: adjustedAmount >= 0
             ? `${monster.card.cardName}に${adjustedAmount}ダメージを与えました(累積: ${monster.currentDamage})`
             : `${monster.card.cardName}が${-adjustedAmount}回復しました(累積: ${monster.currentDamage})`,
+        revealCardNames: true,
         time: Date.now()
     });
 
@@ -1308,6 +1336,7 @@ function moveSelectedEffectCard(playerIndex, choice) {
     gameState.logs.push({
         type: 'system',
         message: `${player.id}が効果で「${card.card.cardName}」を${choice.policy.destination === 'hand' ? '手札に加えました' : choice.policy.destination === 'field' ? '場に出しました' : choice.policy.destination === 'graveyard' ? '墓地へ送りました' : choice.policy.destination === 'ex' ? 'EXへ戻しました' : 'デッキに戻しました'}`,
+        revealCardNames: choice.policy.destination === 'field',
         time: Date.now()
     });
     if (gameState.operationMode !== 'public' && ownerIndex === 1 && ['hand', 'field'].includes(choice.policy.destination)) {
@@ -1344,7 +1373,7 @@ function resolveSimpleDrawEffect(card, playerIndex) {
 }
 
 function resolveSemiAutoOnEnter(cardInstance, playerIndex) {
-    if ((gameState.playMode !== 'semi-auto' && gameState.operationMode !== 'auto') || !cardInstance?.card?.skills) return;
+    if (gameState.playMode !== 'semi-auto' || !cardInstance?.card?.skills) return;
 
     cardInstance.card.skills.forEach(skill => {
         if (skill.type !== 'P' || !/場に出た時|場に出た際/.test(skill.text || '')) return;
@@ -1354,6 +1383,7 @@ function resolveSemiAutoOnEnter(cardInstance, playerIndex) {
         gameState.logs.push({
             type: 'system',
             message: `自動: ${cardInstance.card.cardName}のPスキル「${skill.name}」を処理しました${result.unresolved ? `。未処理: ${result.unresolved}` : ''}`,
+            revealCardNames: true,
             time: Date.now()
         });
     });
@@ -1424,7 +1454,11 @@ function displayCardDetail(card, source) {
     }
     if (c.skills && c.skills.length > 0) {
         c.skills.forEach(skill => {
-            bodyHTML += `<div class="detail-section"><div class="detail-label">${skill.type === 'A' ? 'アタックスキル' : 'パッシブスキル'}: ${skill.name}</div><div class="detail-content">${skill.text || '-'}</div></div>`;
+            const skillType = skill.type === 'A' ? 'アタックスキル' : 'パッシブスキル';
+            const skillLabel = skillNameMode === 'name' && skill.name?.trim()
+                ? `${skillType}: ${skill.name}`
+                : `${skillType} ${getSkillDisplayName(c, skill).split(' ').at(-1)}`;
+            bodyHTML += `<div class="detail-section"><div class="detail-label">${skillLabel}</div><div class="detail-content">${skill.text || '-'}</div></div>`;
         });
     }
     if (c.supplementText) {
@@ -1451,6 +1485,7 @@ function renderUI() {
     document.body.classList.toggle('semi-auto-mode', isSemiAutoMode());
     document.getElementById('playModeSelect').value = gameState.playMode;
     document.getElementById('operationModeSelect').value = gameState.operationMode;
+    document.getElementById('skillNameModeSelect').value = skillNameMode;
     
     const statusValues = document.querySelectorAll('.status-value');
     const statusLabels = document.querySelectorAll('.status-label');
@@ -1507,9 +1542,10 @@ function renderUI() {
             second: '2-digit'
         });
         
-        const safeMessage = gameState.operationMode === 'public' || log.type === 'private'
+        const revealNames = gameState.operationMode === 'public' || log.type === 'private' || (gameState.operationMode === 'auto' && log.revealCardNames === true);
+        const safeMessage = formatSkillNamesForDisplay(revealNames
             ? log.message
-            : redactCardNames(log.message);
+            : redactCardNames(log.message));
         entry.innerHTML = `<span class="log-time">${timeStr}</span><span class="log-label">${labelText}</span><span>${safeMessage}</span>`;
         logDisplay.appendChild(entry);
     });
@@ -2336,6 +2372,13 @@ document.getElementById('chatInput').addEventListener('keydown', event => {
 
 document.getElementById('startGameBtn').addEventListener('click', () => {
     if (!gameState.mulliganPhase || gameState.players[1].mulliganReady) return;
+    const ownershipIssues = AmarisCollection.getState().gameMode === 'trading' && loadedDeckData
+        ? AmarisCollection.getDeckOwnershipIssues(loadedDeckData)
+        : [];
+    if (ownershipIssues.length) {
+        updateGameStartButton();
+        return;
+    }
     if (gameState.players[1].hand.length === 0 && gameState.players[1].deck.length > 0) {
         executeAction({ type: 'INITIAL_DRAW' });
         return;
@@ -2349,6 +2392,19 @@ document.getElementById('playModeSelect').addEventListener('change', event => {
 
 document.getElementById('operationModeSelect').addEventListener('change', event => {
     executeAction({ type: 'SET_OPERATION_MODE', mode: event.target.value });
+});
+
+document.getElementById('skillNameModeSelect').addEventListener('change', event => {
+    skillNameMode = event.target.value === 'name' ? 'name' : 'number';
+    localStorage.setItem('skillNameMode', skillNameMode);
+    if (gameState.selectedFieldMonster) {
+        displayCardDetail(gameState.selectedFieldMonster, 'field');
+        updateActionPanel('field');
+    } else if (gameState.selectedCard) {
+        displayCardDetail(gameState.selectedCard, gameState.selectedCardSource);
+        updateActionPanel(gameState.selectedCardSource);
+    }
+    renderUI();
 });
 
 // 独立パネルのセルクリックイベント
@@ -2394,6 +2450,7 @@ document.getElementById('placementConfirmBtn').addEventListener('click', () => {
             gameState.logs.push({
                 type: 'system',
                 message: `${currentMonster.card.cardName}と${targetMonster.card.cardName}の位置を交換しました`,
+                revealCardNames: true,
                 time: Date.now()
             });
         } else {
@@ -2402,6 +2459,7 @@ document.getElementById('placementConfirmBtn').addEventListener('click', () => {
             gameState.logs.push({
                 type: 'system',
                 message: `${currentMonster.card.cardName}を移動しました`,
+                revealCardNames: true,
                 time: Date.now()
             });
         }
@@ -2454,7 +2512,7 @@ function executeAction(action) {
     
     switch(action.type) {
         case 'SET_PLAY_MODE':
-            gameState.playMode = gameState.operationMode === 'auto' || action.mode === 'semi-auto' ? 'semi-auto' : 'manual';
+            gameState.playMode = action.mode === 'semi-auto' ? 'semi-auto' : 'manual';
             if (gameState.playMode === 'semi-auto' && gameState.operationMode === 'public') {
                 gameState.operationMode = 'private';
                 gameState.logs.push({ type: 'system', message: 'セミオートでは操作モードを非公開にしました', time: Date.now() });
@@ -2468,7 +2526,6 @@ function executeAction(action) {
 
         case 'SET_OPERATION_MODE':
             gameState.operationMode = ['private', 'public', 'auto'].includes(action.mode) ? action.mode : 'private';
-            gameState.playMode = gameState.operationMode === 'auto' ? 'semi-auto' : 'manual';
             gameState.logs.push({
                 type: 'system',
                 message: `操作モードを${{ private: '非公開', public: '公開', auto: '自動' }[gameState.operationMode]}に変更しました`,
@@ -2710,11 +2767,12 @@ function executeAction(action) {
                 if (isSemiAutoMode()) {
                     const card = gameState.selectedCard.card;
                     const result = resolveAutomaticEffectText(card.contentText, 1, { card, target: action.target, cardChoice: action.cardChoice });
-                    gameState.logs.push({ type: '1P', message: `${card.cardName}の効果を発動しました${result.unresolved ? `。未処理: ${result.unresolved}` : ''}`, time: Date.now() });
+                    gameState.logs.push({ type: '1P', message: `${card.cardName}の効果を発動しました${result.unresolved ? `。未処理: ${result.unresolved}` : ''}`, revealCardNames: true, time: Date.now() });
                 } else {
                     gameState.logs.push({
                         type: '1P',
                         message: `${gameState.selectedCard.card.cardName}の効果を発動: ${getCardEffectText(gameState.selectedCard.card)}`,
+                        revealCardNames: true,
                         time: Date.now()
                     });
                 }
@@ -2783,6 +2841,7 @@ function executeAction(action) {
                     gameState.logs.push({ 
                         type: 'system', 
                         message: `1Pが${zoneName}ゾーンにモンスターを出しました: ${placedCard.card.cardName}`,
+                        revealCardNames: true,
                         time: Date.now()
                     });
                     gameState.selectedCard = null;
@@ -2807,6 +2866,7 @@ function executeAction(action) {
                     gameState.logs.push({ 
                         type: 'system', 
                         message: `1Pが${zoneName}ゾーンで特殊進化しました: ${underCard.card.cardName}の上に${placedCard.card.cardName}`,
+                        revealCardNames: true,
                         time: Date.now()
                     });
                     gameState.selectedCard = null;
@@ -2832,6 +2892,7 @@ function executeAction(action) {
                     gameState.logs.push({
                         type: 'system',
                         message: `1Pが進化元を墓地へ送り、${placedCard.card.cardName}を${zoneName}ゾーンに進化召喚しました（コスト${cost}）`,
+                        revealCardNames: true,
                         time: Date.now()
                     });
                     gameState.selectedCard = null;
@@ -2859,6 +2920,7 @@ function executeAction(action) {
                     gameState.logs.push({ 
                         type: '1P', 
                         message: `${activatedCard.card.cardName}を発動しました(コスト: ${cost})。効果: ${getCardEffectText(activatedCard.card)}`,
+                        revealCardNames: true,
                         time: Date.now()
                     });
                     if (isSemiAutoMode()) {
@@ -2900,6 +2962,7 @@ function executeAction(action) {
                     gameState.logs.push({ 
                         type: '1P', 
                         message: `${card.card.cardName}を発動しました。効果: ${getCardEffectText(card.card)}`,
+                        revealCardNames: true,
                         time: Date.now()
                     });
                     if (isSemiAutoMode()) {
@@ -3058,11 +3121,11 @@ function executeAction(action) {
                 if (opponent.shield > 0) {
                     opponent.shield--;
                     drawCardForPlayer(0);
-                    gameState.logs.push({ type: '1P', message: `${attacker.card.cardName}が直接攻撃し、2Pのシールドを1減らしました`, time: Date.now() });
+                    gameState.logs.push({ type: '1P', message: `${attacker.card.cardName}が直接攻撃し、2Pのシールドを1減らしました`, revealCardNames: true, time: Date.now() });
                 } else {
                     const damage = directAttackDamage(attacker);
                     opponent.hp = Math.max(0, opponent.hp - damage);
-                    gameState.logs.push({ type: '1P', message: `${attacker.card.cardName}が直接攻撃し、2Pに${damage}ダメージを与えました`, time: Date.now() });
+                    gameState.logs.push({ type: '1P', message: `${attacker.card.cardName}が直接攻撃し、2Pに${damage}ダメージを与えました`, revealCardNames: true, time: Date.now() });
                     if (opponent.hp <= 0) {
                         gameState.winner = '1P';
                         gameState.logs.push({ type: 'system', message: '1Pの勝利です', time: Date.now() });
@@ -3073,7 +3136,7 @@ function executeAction(action) {
                 if (!defender) break;
                 const damage = getMonsterAttack(attacker) + attributeDamageBonus(attacker.card, defender.card);
                 dealDamageToMonster(0, 'battle', target.index, damage);
-                gameState.logs.push({ type: '1P', message: `${attacker.card.cardName}が通常攻撃しました`, time: Date.now() });
+                gameState.logs.push({ type: '1P', message: `${attacker.card.cardName}が通常攻撃しました`, revealCardNames: true, time: Date.now() });
             } else {
                 break;
             }
@@ -3126,6 +3189,7 @@ function executeAction(action) {
                 message: stats.effectOnly
                     ? `${attacker.card.cardName}のAスキル「${skill.name}」を発動（全体効果、コスト${stats.cost}）`
                     : `${attacker.card.cardName}のAスキル「${skill.name}」を${describeAttackTarget(target)}に発動（${stats.damage}ダメージ${stats.hits > 1 ? `×${stats.hits}` : ''}、コスト${stats.cost}）`,
+                revealCardNames: true,
                 time: Date.now()
             });
             const effectResult = resolveAutomaticEffectText(skill.text, 1, { attacker: position, target, damage: damageDealt || stats.damage });
@@ -3503,6 +3567,7 @@ function renderActionPanel(source) {
                 gameState.logs.push({
                     type: '1P',
                     message: `${gameState.players[1].field.counter.card.cardName}をカウンター発動しました。効果: ${getCardEffectText(gameState.players[1].field.counter.card)}`,
+                    revealCardNames: true,
                     time: Date.now()
                 });
                 gameState.players[1].graveyard.push(gameState.players[1].field.counter);
@@ -3559,11 +3624,12 @@ function renderActionPanel(source) {
                     && gameState.players[1].mana >= skillStats.cost;
                 const skillBtn = document.createElement('button');
                 skillBtn.className = 'action-btn';
+                const displaySkillName = getSkillDisplayName(card, skill);
                 skillBtn.textContent = gameState.playMode === 'semi-auto' && skillStats
-                    ? `セミオート A: ${skill.name}`
+                    ? `セミオート ${displaySkillName}`
                     : gameState.playMode === 'semi-auto'
-                        ? `Aスキル（手動処理）: ${skill.name}`
-                        : `Aスキル: ${skill.name}`;
+                        ? `Aスキル（未対応）: ${displaySkillName}`
+                        : skillNameMode === 'name' ? `Aスキル: ${displaySkillName}` : displaySkillName;
                     skillBtn.dataset.manualOnly = gameState.playMode === 'semi-auto' && !autoSkillSupported ? 'true' : 'false';
                 skillBtn.disabled = gameState.playMode === 'semi-auto'
                     ? !canUseSemiAutoSkill
@@ -3587,7 +3653,7 @@ function renderActionPanel(source) {
                         return;
                     }
 
-                    showTargetSelection(`Aスキル: ${skill.name}`, target => {
+                    showTargetSelection(`${displaySkillName}の対象`, target => {
                         if (gameState.playMode === 'semi-auto') {
                             executeAction({
                                 type: 'ACTIVATE_ATTACK_SKILL',
@@ -3599,6 +3665,7 @@ function renderActionPanel(source) {
                             gameState.logs.push({
                                 type: '1P',
                                 message: `${card.cardName}のAスキル「${skill.name}」を${describeAttackTarget(target)}に発動しました。効果: ${skill.text || '効果テキストなし'}`,
+                                revealCardNames: true,
                                 time: Date.now()
                             });
                             renderUI();
@@ -3619,9 +3686,10 @@ function renderActionPanel(source) {
                 const skillBtn = document.createElement('button');
                 skillBtn.className = 'action-btn';
                 const isSupportedPassive = isAutomaticEffectTextSupported(skill.text, { attacker: gameState.selectedFieldPosition });
+                const displaySkillName = getSkillDisplayName(card, skill);
                 skillBtn.textContent = gameState.playMode === 'semi-auto' && !isSupportedPassive
-                    ? `Pスキル（未対応）: ${skill.name}`
-                    : `Pスキル: ${skill.name}`;
+                    ? `Pスキル（未対応）: ${displaySkillName}`
+                    : skillNameMode === 'name' ? `Pスキル: ${displaySkillName}` : displaySkillName;
                 skillBtn.dataset.manualOnly = gameState.playMode === 'semi-auto' && !isSupportedPassive ? 'true' : 'false';
                 skillBtn.disabled = !isMyTurn;
                 skillBtn.addEventListener('click', () => {
@@ -3636,12 +3704,14 @@ function renderActionPanel(source) {
                         gameState.logs.push({
                             type: 'system',
                             message: `自動: Pスキル「${skill.name}」を処理しました${result.unresolved ? `。未処理: ${result.unresolved}。手動で処理してください` : ''}`,
+                            revealCardNames: true,
                             time: Date.now()
                         });
                     } else {
                         gameState.logs.push({
                             type: '1P',
                             message: `${card.cardName}のPスキル「${skill.name}」を発動しました。効果: ${skill.text || '効果テキストなし'}`,
+                            revealCardNames: true,
                             time: Date.now()
                         });
                     }
@@ -3649,7 +3719,7 @@ function renderActionPanel(source) {
                     renderUI();
                     };
                     if (isSemiAutoMode() && requiresEffectChoice(skill.text)) {
-                        selectAutomaticEffectTarget(skill.text, `Pスキル: ${skill.name}`, resolvePassive);
+                        selectAutomaticEffectTarget(skill.text, `${displaySkillName}の対象`, resolvePassive);
                     } else {
                         resolvePassive(null);
                     }
@@ -3679,6 +3749,7 @@ function renderActionPanel(source) {
             gameState.logs.push({
                 type: 'system',
                 message: `${card.cardName}を墓地に送りました`,
+                revealCardNames: true,
                 time: Date.now()
             });
             gameState.selectedFieldMonster = null;
@@ -3699,6 +3770,7 @@ function renderActionPanel(source) {
             gameState.logs.push({
                 type: 'system',
                 message: `${card.cardName}を手札に加えました`,
+                revealCardNames: true,
                 time: Date.now()
             });
             gameState.selectedFieldMonster = null;
@@ -3720,6 +3792,7 @@ function renderActionPanel(source) {
             gameState.logs.push({
                 type: 'system',
                 message: `${card.cardName}をフリーゾーンに移動しました`,
+                revealCardNames: true,
                 time: Date.now()
             });
             gameState.selectedFieldMonster = null;
@@ -3741,6 +3814,7 @@ function renderActionPanel(source) {
             gameState.logs.push({
                 type: 'system',
                 message: `${card.cardName}をデッキに戻しました`,
+                revealCardNames: true,
                 time: Date.now()
             });
             gameState.selectedFieldMonster = null;
@@ -3758,9 +3832,9 @@ function renderActionPanel(source) {
             const activateEffect = (target, cardChoice) => {
                 if (isSemiAutoMode()) {
                     const result = resolveAutomaticEffectText(card.contentText, 1, { card, target, cardChoice, attacker: gameState.selectedFieldPosition });
-                    gameState.logs.push({ type: '1P', message: `${card.cardName}の効果を自動処理しました${result.unresolved ? `。未処理: ${result.unresolved}` : ''}`, time: Date.now() });
+                    gameState.logs.push({ type: '1P', message: `${card.cardName}の効果を自動処理しました${result.unresolved ? `。未処理: ${result.unresolved}` : ''}`, revealCardNames: true, time: Date.now() });
                 } else {
-                    gameState.logs.push({ type: '1P', message: `${card.cardName}の効果を発動しました。効果: ${getCardEffectText(card)}`, time: Date.now() });
+                    gameState.logs.push({ type: '1P', message: `${card.cardName}の効果を発動しました。効果: ${getCardEffectText(card)}`, revealCardNames: true, time: Date.now() });
                 }
                 clearAfterAction();
                 renderUI();
@@ -4133,6 +4207,19 @@ function renderActionPanel(source) {
 
 // デッキを読み込む関数
 function loadDeck(deckData) {
+    const ownershipIssues = AmarisCollection.getState().gameMode === 'trading'
+        ? AmarisCollection.getDeckOwnershipIssues(deckData)
+        : [];
+    if (ownershipIssues.length) {
+        loadedDeckData = null;
+        gameState.logs.push({
+            type: 'system',
+            message: `トレードモードの所持数超過によりデッキを読み込めません: ${ownershipIssues.map(issue => `${issue.cardName} ${issue.count}/${issue.limit}`).join('、')}`,
+            time: Date.now()
+        });
+        return false;
+    }
+    loadedDeckData = deckData;
     gameState.players[1].deck = [];
     gameState.players[1].ex = [];
     gameState.players[1].hand = [];

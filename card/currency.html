@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通貨 - 時のアマリス</title>
+    <link rel="stylesheet" href="../css/default.css">
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; }
+        .container { display: flex; max-width: 960px; margin: 1.5rem auto; gap: 1.25rem; padding: 0 1.25rem; }
+        .sidebar { width: 72px; flex: 0 0 72px; display: flex; flex-direction: column; align-items: center; gap: .5rem; padding-top: .5rem; }
+        .sidebar-item { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: var(--text-color); background: rgba(255,255,255,.05); text-decoration: none; font-size: 1.35rem; }
+        .sidebar-item.active { background: var(--accent-color); color: white; }
+        main { flex: 1; min-width: 0; }
+        .currency-panel { padding: 1.25rem; border: 1px solid var(--callout-border); border-radius: 6px; background: var(--callout-bg); }
+        h1 { margin-top: 0; }
+        .balance { margin-bottom: 1rem; color: var(--text-secondary); }
+        .balance strong { color: var(--text-color); font-size: 1.4rem; }
+        button { padding: .65rem 1rem; border: 1px solid var(--accent-green); border-radius: 4px; background: var(--accent-color); color: white; font: inherit; cursor: pointer; }
+        .links { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
+        .links a { color: var(--link-color); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <a href="cardview.html" class="sidebar-item" title="カード一覧">🎴</a>
+            <a href="deckSelect.html" class="sidebar-item" title="対戦">⚔️</a>
+            <a href="gacha.html" class="sidebar-item" title="カードパック">📦</a>
+            <a href="currency.html" class="sidebar-item active" title="通貨">🪙</a>
+        </aside>
+        <main>
+            <section class="currency-panel">
+                <h1>ゲーム内通貨</h1>
+                <div class="balance">所持通貨: <strong id="currencyValue">0</strong></div>
+                <button id="earnCurrencyBtn" type="button">+1,000通貨を受け取る</button>
+            </section>
+            <nav class="links">
+                <a href="gacha.html">カードパックへ</a>
+                <a href="cardview.html">カード一覧・所持状況</a>
+            </nav>
+        </main>
+    </div>
+    <script src="collection.js"></script>
+    <script src="currency.js"></script>
+</body>
+</html>

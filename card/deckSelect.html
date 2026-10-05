@@ -172,6 +172,8 @@
         <aside class="sidebar">
             <a href="cardview.html" class="sidebar-item" title="カード一覧">🎴</a>
             <a href="deckSelect.html" class="sidebar-item active" title="対戦">⚔️</a>
+            <a href="gacha.html" class="sidebar-item" title="カードパック">📦</a>
+            <a href="currency.html" class="sidebar-item" title="通貨">🪙</a>
             <a href="rules.html" class="sidebar-item" title="ルール">📖</a>
             <a href="16.html" class="sidebar-item" title="印刷">🖨️</a>
             <a href="../index.html" class="sidebar-item" title="Wikiトップ">🏠</a>
@@ -199,6 +201,15 @@
                     </div>
                 </div>
 
+                <div class="card-panel">
+                    <label for="collectionModeSelect">カード使用モード</label>
+                    <select id="collectionModeSelect">
+                        <option value="unlimited">無制限（全カード使用可）</option>
+                        <option value="trading">トレーディング（所持カードのみ）</option>
+                    </select>
+                    <div id="ownershipWarning" role="status" style="color:#ef4444;margin-top:.5rem"></div>
+                </div>
+
                 <fieldset class="mode-selection">
                     <legend>プレイモード</legend>
                     <label class="mode-option"><input type="radio" name="playMode" value="battle" checked>対戦</label>
@@ -210,8 +221,26 @@
         </main>
     </div>
 
+    <script src="collection.js"></script>
     <script>
         let deckData = null;
+
+        function updateDeckStartState() {
+            const mode = document.getElementById('collectionModeSelect').value;
+            const issues = mode === 'trading' && deckData ? AmarisCollection.getDeckOwnershipIssues(deckData) : [];
+            const warning = document.getElementById('ownershipWarning');
+            warning.textContent = issues.length
+                ? `所持数超過: ${issues.map(issue => `${issue.cardName} ${issue.count}/${issue.limit}`).join('、')}`
+                : '';
+            document.getElementById('startBtn').disabled = !deckData || issues.length > 0;
+        }
+
+        const collectionModeSelect = document.getElementById('collectionModeSelect');
+        collectionModeSelect.value = AmarisCollection.getState().gameMode;
+        collectionModeSelect.addEventListener('change', event => {
+            AmarisCollection.setGameMode(event.target.value);
+            updateDeckStartState();
+        });
 
         document.getElementById('deckInput').addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -229,7 +258,7 @@
                     document.getElementById('mainCount').textContent = mainCount;
                     document.getElementById('exCount').textContent = exCount;
                     document.getElementById('deckInfo').classList.add('active');
-                    document.getElementById('startBtn').disabled = false;
+                    updateDeckStartState();
                 } catch (error) {
                     alert('デッキの読み込みに失敗しました: ' + error.message);
                 }
@@ -245,6 +274,13 @@
 
         document.getElementById('startBtn').addEventListener('click', () => {
             if (!deckData) return;
+
+            AmarisCollection.setGameMode(collectionModeSelect.value);
+            const issues = collectionModeSelect.value === 'trading' ? AmarisCollection.getDeckOwnershipIssues(deckData) : [];
+            if (issues.length) {
+                updateDeckStartState();
+                return;
+            }
             
             // デッキデータをlocalStorageに保存
             localStorage.setItem('battleDeck', JSON.stringify(deckData));

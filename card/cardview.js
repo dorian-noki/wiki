@@ -138,13 +138,18 @@ function addToDeck(cardIndex) {
         deck[deckType][cardIndex] = 0;
     }
     
-    if (deck[deckType][cardIndex] < 3) {
+    if (deck[deckType][cardIndex] < getDeckCardLimit(cardIndex)) {
         deck[deckType][cardIndex]++;
         renderDeck();
         updateDeckCount();
         saveDeckToCookie();
         renderCards();
     }
+}
+
+function getDeckCardLimit(cardIndex) {
+    if (AmarisCollection.getState().gameMode !== 'trading') return 3;
+    return Math.min(3, AmarisCollection.getOwned(allCards[cardIndex]?.cardName));
 }
 
 // デッキからカード削除
@@ -206,7 +211,7 @@ function renderDeck() {
             <div class="deck-card-count">
                 <button class="deck-btn" onclick="removeFromDeck(${idx})" ${count === 0 ? 'disabled' : ''}>−</button>
                 <span class="deck-count-num">${count}</span>
-                <button class="deck-btn" onclick="addToDeck(${idx})" ${count >= 3 ? 'disabled' : ''}>+</button>
+                <button class="deck-btn" onclick="addToDeck(${idx})" ${count >= getDeckCardLimit(idx) ? 'disabled' : ''}>+</button>
             </div>
         </div>`;
     }).join('');
@@ -221,7 +226,15 @@ function updateDeckCount() {
     document.getElementById('exDeckCount').textContent = exCount;
     
     const deckCountEl = document.getElementById('deckCount');
-    const isValid = mainCount >= 40 && mainCount <= 60 && exCount <= 15;
+    const ownershipIssues = AmarisCollection.getState().gameMode === 'trading'
+        ? ['main', 'ex'].flatMap(zone => Object.entries(deck[zone])
+            .filter(([index, count]) => Number(count) > getDeckCardLimit(Number(index)))
+            .map(([index]) => allCards[Number(index)]?.cardName || '不明なカード'))
+        : [];
+    const isValid = mainCount >= 40 && mainCount <= 60 && exCount <= 15 && ownershipIssues.length === 0;
+    document.getElementById('deckOwnershipStatus').textContent = ownershipIssues.length
+        ? `所持数超過: ${[...new Set(ownershipIssues)].join('、')}`
+        : '';
     
     if (isValid) {
         deckCountEl.classList.remove('error');
@@ -391,6 +404,14 @@ document.getElementById('sortSelect').addEventListener('change', applyFilters);
 document.getElementById('searchName').addEventListener('change', applyFilters);
 document.getElementById('searchType').addEventListener('change', applyFilters);
 document.getElementById('searchContent').addEventListener('change', applyFilters);
+document.getElementById('ownershipFilter').addEventListener('change', applyFilters);
+document.getElementById('collectionModeSelect').value = AmarisCollection.getState().gameMode;
+document.getElementById('collectionModeSelect').addEventListener('change', event => {
+    AmarisCollection.setGameMode(event.target.value);
+    updateDeckCount();
+    renderDeck();
+    renderCards();
+});
 document.getElementById('viewMode').addEventListener('change', (e) => {
     viewMode = e.target.value;
     renderCards();
@@ -405,7 +426,10 @@ function applyFilters() {
 
     filteredCards = allCards.filter(card => {
         const matchFilter = currentFilter === 'all' || card.cardBase === currentFilter;
-        if (!search) return matchFilter;
+        const owned = AmarisCollection.getOwned(card.cardName) > 0;
+        const ownershipFilter = document.getElementById('ownershipFilter').value;
+        const matchOwnership = ownershipFilter === 'all' || (ownershipFilter === 'owned' ? owned : !owned);
+        if (!search) return matchFilter && matchOwnership;
 
         let matchSearch = false;
 
@@ -439,7 +463,7 @@ function applyFilters() {
             }
         }
 
-        return matchFilter && matchSearch;
+        return matchFilter && matchOwnership && matchSearch;
     });
 
     filteredCards.sort((a, b) => {
@@ -487,6 +511,7 @@ function renderCards() {
     container.innerHTML = filteredCards.map(card => {
         const cardIndex = allCards.indexOf(card);
         const cardCount = getCardCountInDeck(cardIndex);
+        const ownedCount = AmarisCollection.getOwned(card.cardName);
         const typeClass = `type-${card.cardBase}`;
         const typeName = {
             monster: 'モンスター',
@@ -501,6 +526,7 @@ function renderCards() {
             <div class="card-header" onclick="showModal(${cardIndex})">
                 <div class="card-title-section">
                     <div class="card-name">${card.cardName || '名前なし'}</div>
+                    <div class="owned-count">所持 ${ownedCount}枚</div>
                     ${card.cardRuby && viewMode === 'detail' ? `<div class="card-ruby">${card.cardRuby}</div>` : ''}
                 </div>
                 <div class="card-meta">
@@ -523,7 +549,7 @@ function renderCards() {
             html += `<div class="card-controls" onclick="event.stopPropagation()">
                 <button class="deck-btn" onclick="removeFromDeck(${cardIndex})" ${cardCount === 0 ? 'disabled' : ''}>−</button>
                 <span class="deck-count-num">${cardCount}</span>
-                <button class="deck-btn" onclick="addToDeck(${cardIndex})" ${cardCount >= 3 ? 'disabled' : ''}>+</button>
+                <button class="deck-btn" onclick="addToDeck(${cardIndex})" ${cardCount >= getDeckCardLimit(cardIndex) ? 'disabled' : ''}>+</button>
             </div>`;
         }
 
